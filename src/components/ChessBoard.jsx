@@ -23,17 +23,25 @@ const ChessBoard = () => {
   });
   const [enPassantTarget, setEnPassantTarget] = useState(null);
   const [capturedPieces, setCapturedPieces] = useState({ W: [], B: [] });
+	const [promotionSelection, setPromotionSelection] = useState(null);
 
   useEffect(() => {
     checkGameStatus();
   }, [turn]);
 
   const handleClick = (row, col) => {
-    if (gameStatus === 'checkmate' || gameStatus === 'stalemate') return;
+    if (gameStatus === 'checkmate' || gameStatus === 'stalemate'|| promotionSelection) return;
 
     if (selectedPiece) {
       if (isLegalMove(selectedPiece.row, selectedPiece.col, row, col)) {
-        movePiece(row, col);
+        const isPawnPromotion = board[selectedPiece.row][selectedPiece.col].slice(1) === 'pawn' &&
+          ((turn === 'W' && row === 0) || (turn === 'B' && row === 7));
+
+        if (isPawnPromotion) {
+          setPromotionSelection({ fromRow: selectedPiece.row, fromCol: selectedPiece.col, toRow: row, toCol: col });
+        } else {
+          movePiece(row, col);
+        }
       } else {
         setSelectedPiece(null);
       }
@@ -43,6 +51,27 @@ const ChessBoard = () => {
         setSelectedPiece({ row, col, piece });
       }
     }
+  };
+
+  const handlePromotion = (pieceType) => {
+    const { fromRow, fromCol, toRow, toCol } = promotionSelection;
+    const newBoard = board.map(row => [...row]);
+    const capturedPiece = newBoard[toRow][toCol];
+
+    if (capturedPiece) {
+      setCapturedPieces(prev => ({
+        ...prev,
+        [turn]: [...prev[turn], capturedPiece]
+      }));
+    }
+
+    newBoard[toRow][toCol] = turn + pieceType;
+    newBoard[fromRow][fromCol] = '';
+
+    setBoard(newBoard);
+    setTurn(turn === 'W' ? 'B' : 'W');
+    setSelectedPiece(null);
+    setPromotionSelection(null);
   };
 
   const movePiece = (toRow, toCol) => {
@@ -85,13 +114,8 @@ const ChessBoard = () => {
     newBoard[toRow][toCol] = movingPiece;
     newBoard[fromRow][fromCol] = '';
 
-    // Pawn promotion
-    if (type === 'pawn' && (toRow === 0 || toRow === 7)) {
-      newBoard[toRow][toCol] = color + 'queen';
-    }
-
     // Update castling rights
-    updateCastlingRights(movingPiece, fromRow, fromCol);
+    updateCastlingRights(movingPiece, fromCol);
     // Set en passant target
     setEnPassantTarget(
       type === 'pawn' && Math.abs(fromRow - toRow) === 2
@@ -297,7 +321,7 @@ const ChessBoard = () => {
   };
 
   
-  const updateCastlingRights = (piece, fromRow, fromCol) => {
+  const updateCastlingRights = (piece, fromCol) => {
     const newCastlingRights = { ...castlingRights };
     const type = piece.slice(1);
     const color = piece[0];
@@ -366,6 +390,19 @@ const ChessBoard = () => {
       <div className="w-full max-w-[80vw] mt-4">
         <CapturedPieces pieces={capturedPieces.B} color="B" />
       </div>
+      {promotionSelection && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-4 rounded-lg shadow-xl flex gap-4">
+            {['queen', 'rook', 'bishop', 'knight'].map((piece) => (
+              <div
+                key={piece}
+                className="w-12 h-12 lg:w-16 lg:h-16 flex items-center justify-center cursor-pointer hover:bg-amber-100 rounded"
+                onClick={() => handlePromotion(piece)}
+              >
+                <ChessPiece piece={`${turn}${piece}`} />
+              </div>
+            ))}
+          </div>
+        )}
     </div>
   );
 };
