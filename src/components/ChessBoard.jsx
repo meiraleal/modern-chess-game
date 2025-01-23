@@ -29,7 +29,7 @@ const ChessBoard = () => {
   }, [turn]);
 
   const handleClick = (row, col) => {
-    if (gameStatus !== 'ongoing') return;
+    if (gameStatus === 'checkmate' || gameStatus === 'stalemate') return;
 
     if (selectedPiece) {
       if (isLegalMove(selectedPiece.row, selectedPiece.col, row, col)) {
