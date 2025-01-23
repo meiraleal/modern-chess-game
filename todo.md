@@ -3,6 +3,6 @@ Issues
 [X] When Black checks white, it throws checkmate even if there is legal moves
 [X] En passant not working
 [X] Fix castling not working
-[ ] When black checks white with the beshop white can only protect by move the king, not the other pieces that could capture the beshop or act as barrier
+[ ] when king is in check, moving a piece in front of the king isn't a valid move
 [X] Implement promotion functionality
-[ ] Bug: the promoted piece isn't checking in the king after being promoted
+[ ] Bug: isLegalMove has circular dependency causing infinite loop 

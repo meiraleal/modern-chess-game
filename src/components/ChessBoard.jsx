@@ -23,7 +23,7 @@ const ChessBoard = () => {
   });
   const [enPassantTarget, setEnPassantTarget] = useState(null);
   const [capturedPieces, setCapturedPieces] = useState({ W: [], B: [] });
-	const [promotionSelection, setPromotionSelection] = useState(null);
+  const [promotionSelection, setPromotionSelection] = useState(null);
 
   useEffect(() => {
     checkGameStatus();
@@ -128,40 +128,39 @@ const ChessBoard = () => {
     setSelectedPiece(null);
   };
 
-  const isLegalMove = (startRow, startCol, endRow, endCol) => {
-    const piece = board[startRow][startCol];
+  const isLegalMove = (startRow, startCol, endRow, endCol, boardState = board) => {
+    const piece = boardState[startRow][startCol];
     if (!piece) return false;
     const pieceType = piece.slice(1).toLowerCase();
     const color = piece[0];
 
-    if (board[endRow][endCol] && board[endRow][endCol][0] === color) return false;
+    if (boardState[endRow][endCol] && boardState[endRow][endCol][0] === color) return false;
 
     let isLegal = false;
 
     switch (pieceType) {
       case 'pawn':
-        isLegal = isPawnMove(startRow, startCol, endRow, endCol, color);
+        isLegal = isPawnMove(startRow, startCol, endRow, endCol, color, boardState);
         break;
       case 'rook':
-        isLegal = isStraightMove(startRow, startCol, endRow, endCol);
+        isLegal = isStraightMove(startRow, startCol, endRow, endCol, boardState);
         break;
       case 'bishop':
-        isLegal = isDiagonalMove(startRow, startCol, endRow, endCol);
+        isLegal = isDiagonalMove(startRow, startCol, endRow, endCol, boardState);
         break;
       case 'queen':
-        isLegal = isStraightMove(startRow, startCol, endRow, endCol) || isDiagonalMove(startRow, startCol, endRow, endCol);
+        isLegal = isStraightMove(startRow, startCol, endRow, endCol, boardState) || isDiagonalMove(startRow, startCol, endRow, endCol, boardState);
         break;
       case 'king':
-        isLegal = isKingMove(startRow, startCol, endRow, endCol, color);
+        isLegal = isKingMove(startRow, startCol, endRow, endCol, color, boardState);
         break;
       case 'knight':
-        isLegal = isKnightMove(startRow, startCol, endRow, endCol);
+        isLegal = isKnightMove(startRow, startCol, endRow, endCol, boardState);
         break;
     }
-
     if (isLegal) {
       // Check if the move puts or leaves the king in check
-      const tempBoard = board.map(row => [...row]);
+      const tempBoard = boardState.map(row => [...row]);
       tempBoard[endRow][endCol] = tempBoard[startRow][startCol];
       tempBoard[startRow][startCol] = '';
       if (isKingInCheck(color, tempBoard)) {
@@ -172,31 +171,31 @@ const ChessBoard = () => {
     return isLegal;
   };
 
-  const isPawnMove = (startRow, startCol, endRow, endCol, color) => {
+  const isPawnMove = (startRow, startCol, endRow, endCol, color, boardState = board) => {
     const direction = color === 'W' ? -1 : 1;
     const startingRow = color === 'W' ? 6 : 1;
 
     // Normal move
-    if (startCol === endCol && endRow === startRow + direction && board[endRow][endCol] === '') {
+    if (startCol === endCol && endRow === startRow + direction && boardState[endRow][endCol] === '') {
       return true;
     }
 
     // Initial two-square move
     if (startCol === endCol && startRow === startingRow && endRow === startRow + 2 * direction && 
-        board[startRow + direction][startCol] === '' && board[endRow][endCol] === '') {
+      boardState[startRow + direction][startCol] === '' && boardState[endRow][endCol] === '') {
       return true;
     }
 
     // Capture
     if (Math.abs(startCol - endCol) === 1 && endRow === startRow + direction && 
-        (board[endRow][endCol] !== '' || (enPassantTarget && enPassantTarget.row === endRow && enPassantTarget.col === endCol))) {
+        (boardState[endRow][endCol] !== '' || (enPassantTarget && enPassantTarget.row === endRow && enPassantTarget.col === endCol))) {
       return true;
     }
 
     return false;
   };
 
-  const isStraightMove = (startRow, startCol, endRow, endCol) => {
+  const isStraightMove = (startRow, startCol, endRow, endCol, boardState = board) => {
     if (startRow !== endRow && startCol !== endCol) return false;
 
     const rowStep = startRow === endRow ? 0 : (endRow > startRow ? 1 : -1);
@@ -206,7 +205,7 @@ const ChessBoard = () => {
     let currentCol = startCol + colStep;
 
     while (currentRow !== endRow || currentCol !== endCol) {
-      if (board[currentRow][currentCol] !== '') return false;
+      if (boardState[currentRow][currentCol] !== '') return false;
       currentRow += rowStep;
       currentCol += colStep;
     }
@@ -214,7 +213,7 @@ const ChessBoard = () => {
     return true;
   };
 
-  const isDiagonalMove = (startRow, startCol, endRow, endCol) => {
+  const isDiagonalMove = (startRow, startCol, endRow, endCol, boardState = board) => {
     if (Math.abs(startRow - endRow) !== Math.abs(startCol - endCol)) return false;
 
     const rowStep = endRow > startRow ? 1 : -1;
@@ -224,7 +223,7 @@ const ChessBoard = () => {
     let currentCol = startCol + colStep;
 
     while (currentRow !== endRow && currentCol !== endCol) {
-      if (board[currentRow][currentCol] !== '') return false;
+      if (boardState[currentRow][currentCol] !== '') return false;
       currentRow += rowStep;
       currentCol += colStep;
     }
@@ -232,7 +231,7 @@ const ChessBoard = () => {
     return true;
   };
 
-  const isKingMove = (startRow, startCol, endRow, endCol, color) => {
+  const isKingMove = (startRow, startCol, endRow, endCol, color, boardState = board) => {
     if (Math.abs(startRow - endRow) <= 1 && Math.abs(startCol - endCol) <= 1) {
       return true;
     }
@@ -243,11 +242,11 @@ const ChessBoard = () => {
       if (!castlingRights[color][isKingSide ? 'kingSide' : 'queenSide']) return false;
       
       const rookCol = isKingSide ? 7 : 0;
-      if (board[startRow][rookCol].slice(1) !== 'rook') return false;
+      if (boardState[startRow][rookCol].slice(1) !== 'rook') return false;
 
       const direction = isKingSide ? 1 : -1;
       for (let i = startCol + direction; i !== rookCol; i += direction) {
-        if (board[startRow][i] !== '') return false;
+        if (boardState[startRow][i] !== '') return false;
       }
 
       // Check if the king passes through check
@@ -288,7 +287,7 @@ const ChessBoard = () => {
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
         if (boardState[i][j][0] === attackingColor) {
-          if (isLegalMove(i, j, row, col)) {
+          if (isLegalMove(i, j, row, col, boardState)) {
             return true;
           }
         }
@@ -307,7 +306,6 @@ const ChessBoard = () => {
                 const tempBoard = boardState.map(row => [...row]);
                 tempBoard[endRow][endCol] = tempBoard[startRow][startCol];
                 tempBoard[startRow][startCol] = '';
-                
                 if (!isKingInCheck(color, tempBoard)) {
                   return true;
                 }
