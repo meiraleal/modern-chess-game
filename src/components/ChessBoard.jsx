@@ -299,12 +299,12 @@ const ChessBoard = () => {
   
   const updateCastlingRights = (piece, fromRow, fromCol) => {
     const newCastlingRights = { ...castlingRights };
+    const type = piece.slice(1);
     const color = piece[0];
-
-    if (piece[1] === 'king') {
+    if (type === 'king') {
       newCastlingRights[color].kingSide = false;
       newCastlingRights[color].queenSide = false;
-    } else if (piece[1] === 'rook') {
+    } else if (type === 'rook') {
       if (fromCol === 0) newCastlingRights[color].queenSide = false;
       if (fromCol === 7) newCastlingRights[color].kingSide = false;
     }
