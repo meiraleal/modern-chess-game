@@ -49,19 +49,20 @@ const ChessBoard = () => {
     const newBoard = board.map(row => [...row]);
     const [fromRow, fromCol] = [selectedPiece.row, selectedPiece.col];
     const movingPiece = selectedPiece.piece;
+    const type = movingPiece.slice(1);
+    const color = movingPiece[0];
 
     // Handle capture
     const capturedPiece = newBoard[toRow][toCol];
     if (capturedPiece) {
-      const captureColor = movingPiece[0] === 'W' ? 'W' : 'B';
       setCapturedPieces(prev => ({
         ...prev,
-        [captureColor]: [...prev[captureColor], capturedPiece]
+        [color]: [...prev[color], capturedPiece]
       }));
     }
 
     // Handle castling
-    if (movingPiece[1] === 'king' && Math.abs(fromCol - toCol) === 2) {
+    if (type === 'king' && Math.abs(fromCol - toCol) === 2) {
       const isKingSide = toCol > fromCol;
       const rookCol = isKingSide ? 7 : 0;
       const newRookCol = isKingSide ? 5 : 3;
@@ -70,13 +71,13 @@ const ChessBoard = () => {
     }
 
     // Handle en passant
-    if (movingPiece[1] === 'pawn' && Math.abs(fromCol - toCol) === 1 && newBoard[toRow][toCol] === '') {
+    if (type === 'pawn' && Math.abs(fromCol - toCol) === 1 && newBoard[toRow][toCol] === '') {
       const capturedPawnRow = fromRow;
       const capturedPawn = newBoard[capturedPawnRow][toCol];
       newBoard[capturedPawnRow][toCol] = '';
       setCapturedPieces(prev => ({
         ...prev,
-        [movingPiece[0]]: [...prev[movingPiece[0]], capturedPawn]
+        [color]: [...prev[color], capturedPawn]
       }));
     }
 
@@ -85,16 +86,15 @@ const ChessBoard = () => {
     newBoard[fromRow][fromCol] = '';
 
     // Pawn promotion
-    if (movingPiece[1] === 'pawn' && (toRow === 0 || toRow === 7)) {
-      newBoard[toRow][toCol] = movingPiece[0] + 'queen';
+    if (type === 'pawn' && (toRow === 0 || toRow === 7)) {
+      newBoard[toRow][toCol] = color + 'queen';
     }
 
     // Update castling rights
     updateCastlingRights(movingPiece, fromRow, fromCol);
-
     // Set en passant target
     setEnPassantTarget(
-      movingPiece[1] === 'pawn' && Math.abs(fromRow - toRow) === 2
+      type === 'pawn' && Math.abs(fromRow - toRow) === 2
         ? { row: (fromRow + toRow) / 2, col: toCol }
         : null
     );
@@ -219,7 +219,7 @@ const ChessBoard = () => {
       if (!castlingRights[color][isKingSide ? 'kingSide' : 'queenSide']) return false;
       
       const rookCol = isKingSide ? 7 : 0;
-      if (board[startRow][rookCol][1] !== 'rook') return false;
+      if (board[startRow][rookCol].slice(1) !== 'rook') return false;
 
       const direction = isKingSide ? 1 : -1;
       for (let i = startCol + direction; i !== rookCol; i += direction) {
@@ -296,6 +296,7 @@ const ChessBoard = () => {
     return false;
   };
 
+  
   const updateCastlingRights = (piece, fromRow, fromCol) => {
     const newCastlingRights = { ...castlingRights };
     const color = piece[0];
